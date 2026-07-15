@@ -1,47 +1,37 @@
 import gradio as gr
 import requests
-import os
 
-BACKEND_URL = os.getenv(
-    "BACKEND_URL",
-    "https://YOUR_BACKEND_URL.onrender.com"
-)
+backend_url = "https://sql-query-generator-backend-1fnk.onrender.com"
 
 def generate_sql(question):
-    try:
-        response = requests.post(
-            f"{BACKEND_URL}/generate-sql",
-            json={"question": question},
-            timeout=30
-        )
 
-        if response.status_code == 200:
-            data = response.json()
-            return data.get("sql", "No SQL generated.")
-        else:
-            return f"Error: {response.text}"
-
-    except Exception as e:
-        return f"Connection Error: {e}"
-
-
-with gr.Blocks(title="AI SQL Query Generator") as demo:
-    gr.Markdown("# AI SQL Query Generator")
-    gr.Markdown("Enter your question in English and generate a MySQL query.")
-
-    question = gr.Textbox(
-        label="Enter your question",
-        placeholder="Example: Show all students with marks greater than 80"
+    response = requests.post(
+        backend_url,
+        json={"question": question}
     )
 
-    output = gr.Code(label="Generated SQL", language="sql")
+    if response.status_code == 200:
+        return response.json()["sql"]
+    else:
+        return "Error connecting to backend."
 
-    generate_btn = gr.Button("Generate SQL")
+demo = gr.Interface(
+    fn=generate_sql,
+    inputs=gr.Textbox(
+        label="Enter English Description",
+        placeholder="Example: Show all students from CSE with marks above 80",
+        lines=4
+    ),
+    outputs=gr.Textbox(
+        label="Generated SQL Query",
+        lines=8
+    ),
+    title="AI SQL Query Generator"
+)
 
-    generate_btn.click(
-        fn=generate_sql,
-        inputs=question,
-        outputs=output
+if __name__ == "__main__":
+    demo.launch(
+        server_name="0.0.0.0",
+        server_port=int(os.environ.get("PORT", 7860))
     )
 
-demo.launch(server_name="0.0.0.0", server_port=7860)
